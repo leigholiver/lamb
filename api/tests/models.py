@@ -10,6 +10,15 @@ class models(Test):
         test_user = user(test_username, "test-user-password")
         test_user_id = test_user.id
 
+        # make sure fillable works
+        self.header("model fillable test")
+        # hax
+        test_user.fillable.append('test_field')
+        test_user.update({"test_field": "asdf", "invalid_field": "asdf"})
+        fillable = test_user.test_field == "asdf"
+        unfillable = test_user.invalid_field != "asdf"
+        self.record(fillable and unfillable, "fillable and unfillable", "fillable: " + str(fillable) + ", unfillable: " + str(unfillable))
+        
         # return False if no model exists
         self.header("non exist model test")
         tmp = user.get('this-id-probably-doesnt-exist-2342jdfjsdfmnweor')
