@@ -5,124 +5,51 @@ from models.user import user
 
 class auth(Test):
     name = "auth"
+
+    def __init__(self):
+        self.auth_util = AuthUtil()
     
     def run(self):
         test_user_username = str(uuid.uuid4())
         test_user_password = "hunter2"
         test_user_token = ""
+        test_user = None
 
-        # auth bad login test
-        self.header("auth bad login test")
-        rsp = self.postRequest({
-            "path":"/login"
-        }, {
-            "username": "this-user-probably-doesnt-exist-asmdasjdajsdjasdj",
-            "password": test_user_password
-        })
-        expected = {'statusCode': 403, 'body': '"Forbidden"'}
-        result = rsp == expected
-        self.record(result, expected, rsp)
+        # generate and verify a pwhash
+        self.header("generate/verify password hash")
+        pwhash = self.auth_util.generatePasswordHash(test_user_password)
+        result = self.auth_util.verifyPasswordHash(test_user_password, pwhash)
+        self.record(result == True, "True", str(result))
 
+        # create a test user
+        test_user = user(test_user_username, pwhash)
+        test_user.save()
 
-        # auth register test
-        self.header("auth register test")
-        rsp = self.postRequest({
-            "path":"/register"
-        }, {
-            "username": test_user_username,
-            "password": test_user_password
-        })
-        result = rsp['statusCode'] == 201 and "token" in rsp['body']
-        expected = str("rsp['statusCode'] == 201 and \"token\" in rsp['body']")
-        if result:
-            test_user_token = json.loads(rsp['body'])['token']
-            print("got token: " + test_user_token)
-        self.record(result, expected, rsp)
+        # generate and verify a token
+        self.header("generate/verify authentication token")
+        test_user_token = self.auth_util.generateToken(test_user.id)
+        userid = self.auth_util.getUserFromToken(test_user_token)
+        self.record(test_user.id == userid, str(test_user.id), str(userid))
 
+        # bad token
+        self.header("bad token")
+        result = self.auth_util.getUserFromToken("this-isnt-a-real-token")
+        self.record(result == False, "False", str(result))
 
-        # auth register existing username test
-        self.header("auth register existing username test")
-        rsp = self.postRequest({
-            "path":"/register"
-        }, {
-            "username": test_user_username,
-            "password": test_user_password
-        })
-        expected = {'statusCode': 400, 'body': '"Bad Request"'}
-        result = rsp == expected
-        self.record(result, expected, rsp)
-        
-
-        # auth login test
-        self.header("auth login test")
-        rsp = self.postRequest({
-            "path":"/login"
-        }, {
-            "username": test_user_username,
-            "password": test_user_password
-        })
-        result = rsp['statusCode'] == 200 and "token" in rsp['body']
-        expected = str("rsp['statusCode'] == 200 and \"token\" in rsp['body']")
-        self.record(result, expected, rsp)
-
-
-        # auth bad token test
-        self.header("auth bad token test")
-        rsp = self.getRequest({
-            "path":"/authcheck",
-            "headers": {
-                "token": "not-a-valid-jwt-token-honest"
-            }
-        })
-        expected = {'statusCode': 403, 'body': '"Forbidden"'}
-        result = rsp == expected
-        self.record(result, expected, rsp)
-
-
-        # auth good token test
-        self.header("auth good token test")
-        rsp = self.getRequest({
-            "path":"/authcheck",
-            "headers": {
-                "token": test_user_token
-            }
-        })
-        expected = {'statusCode': 200, 'body': '"pong"'}
-        result = rsp == expected
-        self.record(result, expected, rsp)
-
-
-        # auth token userid mismatch test
-        self.header("auth token userid mismatch test")
-        userid = "this-is-not-a-real-userid-jsdtasjdtnsdtnasdtnn"               
-        bad_token = self.goodTokensGoneBad(test_user_token, { 'userid': userid })
-        rsp = self.getRequest({
-            "path":"/authcheck",
-            "headers": {
-                "token": bad_token
-            }
-        })
-        expected = {'statusCode': 403, 'body': '"Forbidden"'}
-        result = rsp == expected
-        self.record(result, expected, rsp)
-
-
-        # auth expired token test
-        self.header("auth expired token test")
+        # expired token
+        self.header("expired token")
         expires = int(time.time() - 86400)
         bad_token = self.goodTokensGoneBad(test_user_token, { 'expires': expires })
-        rsp = self.getRequest({
-            "path":"/authcheck",
-            "headers": {
-                "token": bad_token
-            }
-        })
-        expected = {'statusCode': 403, 'body': '"Forbidden"'}
-        result = rsp == expected
-        self.record(result, expected, rsp)
+        result = self.auth_util.getUserFromToken(bad_token)
+        self.record(result == False, "False", str(result))
+        
+        # userid mismatch
+        self.header("token userid mismatch")
+        bad_token = self.goodTokensGoneBad(test_user_token, { 'userid': "not-a-real-userid" })
+        result = self.auth_util.getUserFromToken(bad_token)
+        self.record(result == False, "False", str(result))
 
-
-        print("Deleting test user...")
+        print("Deleting test user(s)...")
         users = user.find({"username": test_user_username})
         for u in users:
             u.delete()
