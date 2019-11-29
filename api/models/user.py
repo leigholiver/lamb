@@ -11,7 +11,7 @@ class user(Model):
 
         # list of str, fields which are allowed
         # to be updated from the api
-        self.fillable = []
+        self.fillable = [ 'username' ]
 
         # list of fields to use as string 
         # indexes you will be able to use 
