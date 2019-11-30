@@ -21,17 +21,14 @@ class make(Command):
     }
 
     # specific file outputs
-    db_output = os.path.dirname(os.path.realpath(__file__)) + "/../deploy/db/main.tf"
-    platform_output = os.path.dirname(os.path.realpath(__file__)) + "/../main.tf"
-    public_output = os.path.dirname(os.path.realpath(__file__)) + "/../deploy/public/main.tf"
+    # compiled routes
     routes_output = os.path.dirname(os.path.realpath(__file__)) + "/../api/routes_compiled.py"
+
     
     def run(self, data):
         # create the /main.tf deployment file
         if len(data) == 1 and ( data[0] == 'terraform' or data[0] == 'tf'):
-            self.templater.write("main.tf.j2", self.platform_output, { 'lamb': lamb })
-            self.templater.write("db.tf.j2", self.db_output, { 'tables': self.scanForTables() })
-            self.templater.write("public.main.tf.j2", self.public_output, { 'no_www': lamb.no_www })
+            self.makeTerraform()
             print("terraform files created")
         
         # build the routes cache
@@ -109,5 +106,33 @@ class make(Command):
         return tmp
 
 
+    def makeTerraform(self):
+        files = {
+            'platform': {
+                'dir': os.path.dirname(os.path.realpath(__file__)) + "/../",
+                'data': { 'lamb': lamb }
+            },
+            'db': {
+                'dir': os.path.dirname(os.path.realpath(__file__)) + "/../deploy/db/",
+                'data': { 'tables': self.scanForTables() }
+            },
+            'api': {
+                'dir': os.path.dirname(os.path.realpath(__file__)) + "/../deploy/api/",
+                'data': { }
+            },
+            'public': {
+                'dir': os.path.dirname(os.path.realpath(__file__)) + "/../deploy/public/",
+                'data': { 'no_www': lamb.no_www }
+            },
+            'static': {
+                'dir': os.path.dirname(os.path.realpath(__file__)) + "/../deploy/static/",
+                'data': { }
+            },
+        }
 
-
+        edit_message = """# this file is managed by lamb, any changes to it will be lost
+# edit 'main.tf.j2' and run'./lambctl make terraform' to regenerate it"""
+        
+        for key in files.keys():
+            files[key]['data']['edit_message'] = edit_message
+            self.templater.write(files[key]['dir'] + "main.tf.j2", files[key]['dir'] + "main.tf", files[key]['data'])

@@ -1,6 +1,5 @@
-# this file is managed by lamb, run
-# './lambctl make terraform' to regenerate it
-# any changes to this file will be lost
+# this file is managed by lamb, any changes to it will be lost
+# edit 'main.tf.j2' and run'./lambctl make terraform' to regenerate it
 
 variable "aws_account_id" {}
 variable "domain_name" {}
