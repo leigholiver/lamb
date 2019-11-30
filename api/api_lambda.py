@@ -4,7 +4,7 @@ from support.Rejection import Rejection
 
 def lambda_handler(event, context):
     #t_start = time.time()
-    router = Router()
+    router = Router(routes)
     #t_boot = time.time()
     response = router.respond(event, context)
     #t_response = time.time()
@@ -12,6 +12,9 @@ def lambda_handler(event, context):
     return response
 
 class Router():
+    def __init__(self, routes):
+        self.routes = routes
+
     def respond(self, event, context):
         try:
             if 'httpMethod' not in event.keys() or 'path' not in event.keys():
@@ -20,8 +23,8 @@ class Router():
                     'body': '"Bad Request"'
                 }
 
-            if event['httpMethod'] in routes.keys():
-                for route in routes[event['httpMethod']]:
+            if event['httpMethod'] in self.routes.keys():
+                for route in self.routes[event['httpMethod']]:
                     match = re.search(route['path'], event['path'])
                     if (match):
                         route_params = match.groupdict()
@@ -48,7 +51,10 @@ class Router():
                             try:
                                 event['body'] = json.loads(event['body'])
                             except:
-                                pass
+                                return {
+                                    'statusCode': 400,
+                                    'body': 'couldnt parse post body (json)'
+                                }
                                 
                         return action(**route_params)
             return {

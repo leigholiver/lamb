@@ -15,7 +15,7 @@ class Model(object):
 
     # update fields as per self.fillable
     def update(self, data):
-        tmp = []
+        tmp = {}
         for val in self.fillable:
             if val in data.keys():
                 tmp[val] = data[val]
