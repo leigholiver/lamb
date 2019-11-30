@@ -1,11 +1,14 @@
 from support.lamb.Test import Test
 from support.AuthUtil import AuthUtil
+from router import router as app_router
+from tests.support.routes import routes
 from models.user import user
 
 class router(Test):
     name = "router"
     def run(self):
-
+        self.router = app_router(routes, "tests.support.")
+        
         # ping test
         self.header("ping test")
         rsp = self.getRequest({

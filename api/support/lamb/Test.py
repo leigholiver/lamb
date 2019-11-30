@@ -1,6 +1,6 @@
 import json
 from router import router
-from tests.support.routes import routes
+from routes_compiled import routes
 
 class colors:
     HEADER = '\033[94m'
@@ -13,7 +13,7 @@ class colors:
 class Test():
     successful = True
     name = ""
-    router = router(routes, "tests.support.")
+    router = router(routes, "")
     
     def run(self):
         return True
