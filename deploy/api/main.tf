@@ -59,7 +59,7 @@ resource "aws_lambda_function" "lambda" {
   filename      = "${var.lambda_zip}"
   function_name = "${var.lambda_name}"
   role          = "${aws_iam_role.role.arn}"
-  handler       = "api_lambda.lambda_handler"
+  handler       = "router.lambda_handler"
   runtime       = "python3.7"
   source_code_hash = "${filebase64sha256("${var.lambda_zip}")}"
   memory_size = "${var.lambda_memory}"

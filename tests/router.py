@@ -1,5 +1,6 @@
 from support.lamb.Test import Test
-from api_lambda import lambda_handler
+from support.AuthUtil import AuthUtil
+from models.user import user
 
 class router(Test):
     name = "router"
@@ -14,7 +15,6 @@ class router(Test):
         result = rsp == expected
         self.record(result, expected, rsp)
 
-        
         # 404 not found test
         self.header("404 not found test")
         rsp = self.getRequest({
@@ -66,7 +66,6 @@ class router(Test):
         result = rsp == expected
         self.record(result, expected, rsp)
 
-
         # route parameters test
         self.header("route parameters test")
         rsp = self.getRequest({
@@ -76,5 +75,42 @@ class router(Test):
         result = rsp == expected
         self.record(result, expected, rsp)
 
+        # middelware authentication tests
+        test_user_username = "test-user"
+        test_user_password = "hunter2"
+        auth_util = AuthUtil()
+        pwhash = auth_util.generatePasswordHash(test_user_password)
+        test_user = user(test_user_username, pwhash)
+        test_user_token = auth_util.generateToken(test_user.id)
+
+        self.header("no token middleware authentication test")
+        rsp = self.getRequest({
+            "path":"/pong",
+            "queryStringParameters": { 'authcheck': 1 }
+        })
+        expected = {'statusCode': 403, 'body': '"Forbidden"'}
+        result = rsp == expected
+        self.record(result, expected, rsp)
+
+        self.header("bad token middleware authentication test")
+        rsp = self.getRequest({
+            "path":"/pong",
+            "queryStringParameters": { 'authcheck': 1 },
+            "headers": { "token": "this-is-a-bad-token" }
+        })
+        expected = {'statusCode': 403, 'body': '"Forbidden"'}
+        result = rsp == expected
+        self.record(result, expected, rsp)
+
+        self.header("good token middleware authentication test")
+        rsp = self.getRequest({
+            "path":"/pong",
+            "queryStringParameters": { 'authcheck': 1 },
+            "headers": { "token": test_user_token }
+        })
+        print(rsp)
+        expected = "'statusCode': 200"
+        result = rsp['statusCode'] == 200
+        self.record(result, expected, rsp)
 
         return self.successful

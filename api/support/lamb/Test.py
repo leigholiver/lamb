@@ -1,5 +1,6 @@
 import json
-from api_lambda import lambda_handler
+from router import router
+from tests.support.routes import routes
 
 class colors:
     HEADER = '\033[94m'
@@ -12,7 +13,8 @@ class colors:
 class Test():
     successful = True
     name = ""
-
+    router = router(routes, "tests.support.")
+    
     def run(self):
         return True
 
@@ -37,7 +39,7 @@ class Test():
             "resourcePath":"/{proxy+}"
         }
         request.update(data)
-        return lambda_handler(request, {})
+        return self.router.respond(request, {})
 
     def postRequest(self, data, postData):
         request = {
@@ -55,7 +57,7 @@ class Test():
             "body": json.dumps(postData),
         }
         request.update(data)
-        return lambda_handler(request, {})
+        return self.router.respond(request, {})
     
     def header(self, message):
         print(colors.HEADER + "--[ " + message + " ] --" + colors.END)

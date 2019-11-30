@@ -1,19 +1,22 @@
-import time, json, re
+import time, json, re, importlib
 from routes_compiled import routes
 from support.Rejection import Rejection
 
 def lambda_handler(event, context):
     #t_start = time.time()
-    router = Router(routes)
+    r = router(routes, "")
     #t_boot = time.time()
-    response = router.respond(event, context)
+    response = r.respond(event, context)
     #t_response = time.time()
     # print("boot: " + str(t_boot - t_start) + ", response: " + str(t_response - t_boot))
     return response
 
-class Router():
-    def __init__(self, routes):
+class router():
+    def __init__(self, routes, prefix):
+        # inject a class prefix so that we can inject 
+        # custom routes/controllers/middleware for testing
         self.routes = routes
+        self.prefix = prefix
 
     def respond(self, event, context):
         try:
@@ -33,7 +36,7 @@ class Router():
                         controller, dot, function = route['action'].partition(".")
                         if 'middleware' in route.keys():
                             for mwname in route['middleware']:
-                                mw = getattr(getattr(__import__("middleware." + mwname), mwname), mwname)
+                                mw = getattr(importlib.import_module(self.prefix + "middleware." + mwname), mwname)
                                 mw = mw()
                                 try:
                                     event = mw.process(event)
@@ -43,7 +46,7 @@ class Router():
                                         'body': e.body
                                     }
 
-                        ctrlr = getattr(getattr(__import__("controllers." + controller), controller), controller)
+                        ctrlr = getattr(importlib.import_module(self.prefix + "controllers." + controller), controller)
                         ctrlr = ctrlr()
                         action = getattr(ctrlr, function)
 
