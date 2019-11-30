@@ -23,7 +23,6 @@ class auth(Test):
 
         # create a test user
         test_user = user(test_user_username, pwhash)
-        test_user.save()
 
         # generate and verify a token
         self.header("generate/verify authentication token")
@@ -49,11 +48,6 @@ class auth(Test):
         result = self.auth_util.getUserFromToken(bad_token)
         self.record(result == False, "False", str(result))
 
-        print("Deleting test user(s)...")
-        users = user.find({"username": test_user_username})
-        for u in users:
-            u.delete()
-            
         return self.successful
 
 

@@ -17,7 +17,7 @@ class make(Command):
         'middleware': 'middleware',
         'command': '../commands',
         'model': 'models',
-        'test': 'tests'
+        'test': '../tests'
     }
 
     # specific file outputs
