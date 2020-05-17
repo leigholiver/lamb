@@ -1,0 +1,20 @@
+name: Tests
+on: [pull_request]
+jobs:
+  Tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-python@v1
+        with:
+          python-version: '3.7.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r framework/requirements.txt
+          pip install -r api/packages.txt
+      - name: Run tests
+        run: |
+          ./lambctl tests

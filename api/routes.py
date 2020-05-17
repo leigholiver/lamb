@@ -1,22 +1,19 @@
 ##
 # {
 #     methods: [ "GET" and/or "POST" ]
-#     action: ControllerClass.function
+#     action: controller_class.function
 #     middleware: [] # array of middleware class names to apply to the route
 # }
-# if you update this file, you must run ./lambctl make routes
 ##
 routes = {
-    "/login": { 
-        "methods": [ "POST" ],
-        "action": "auth.login",
-        "middleware": [
-        ]
+    "/ping": { 
+        "methods": [ "GET", "POST" ],
+        "action": "default.ping",
+        "middleware": []
     },
-    "/register": { 
-        "methods": [ "POST" ],
-        "action": "auth.register",
-        "middleware": [
-        ]
+    "/pong": { 
+        "methods": [ "GET", "POST" ],
+        "action": "default.pong",
+        "middleware": []
     }
 }

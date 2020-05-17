@@ -1,15 +1,27 @@
 # this file is managed by lamb. any changes to it will be lost.
 routes = {
-    "POST": [
+    "GET": [
         {
-            "action": "auth.login",
+            "action": "default.ping",
             "middleware": [],
-            "path": "\\/login\\/?$"
+            "path": "\\/ping\\/?$"
         },
         {
-            "action": "auth.register",
+            "action": "default.pong",
             "middleware": [],
-            "path": "\\/register\\/?$"
+            "path": "\\/pong\\/?$"
+        }
+    ],
+    "POST": [
+        {
+            "action": "default.ping",
+            "middleware": [],
+            "path": "\\/ping\\/?$"
+        },
+        {
+            "action": "default.pong",
+            "middleware": [],
+            "path": "\\/pong\\/?$"
         }
     ]
 }
