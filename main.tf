@@ -1,61 +1,77 @@
-# this file is managed by lamb, any changes to it will be lost
-# edit 'main.tf.j2' and run'./lambctl make terraform' to regenerate it
-
-terraform {
-  backend "local" {
-    path = "./.tfdata/terraform.tfstate"
-  }
+# name of aws cli profile to use
+variable "aws_profile" {
+  type    = string
+  default = "default"
 }
 
+variable "aws_region" {
+  type    = string
+  default = "eu-west-2"
+}
+
+# these should be in a secrets.env file in TF_VAR_ environment variables
 variable "cloudflare_email" {}
 variable "cloudflare_apikey" {}
-variable "cloudflare_zone" {}
 variable "cloudflare_account_id" {}
-variable "aws_account_id" {}
-variable "domain_name" {}
-variable "static_domain_name" {}
-variable "api_path" {}
-variable "region" {}
-variable "log_retention_days" {}
-variable "jwt_secret" {}
+variable "cloudflare_zone" {}
+
+terraform {
+  backend "s3" {}
+}
+
+provider "aws" {
+  region  = var.aws_region
+  profile = var.aws_profile
+}
 
 provider "cloudflare" {
-  email   = "${var.cloudflare_email}"
-  api_key   = "${var.cloudflare_apikey}"
-  account_id = "${var.cloudflare_account_id}"
+  email      = var.cloudflare_email
+  api_key    = var.cloudflare_apikey
+  account_id = var.cloudflare_account_id
 }
 
-# aws lambda json api
 module "api" {
-  source = "./deploy/api"
-  cloudflare_zone = "${var.cloudflare_zone}"
-  domain_name = "${var.domain_name}"
-  api_path = "${var.api_path}"
-  region = "${var.region}"
-  log_retention_days = "${var.log_retention_days}"
-  jwt_secret = "${var.jwt_secret}"
-  lambda_name = replace("lamb_${var.domain_name}", ".", "_")
+  source             = "./framework/terraform/api"
+  project_name       = var.project_name
+  name               = var.env_name
+  region             = var.aws_region
+  env_vars           = var.env_vars
+  cron_jobs          = var.cron_jobs
+  allowed_ips        = var.allowed_ips
+  api_path           = var.api_path
+  log_retention_days = var.log_retention_days
+  source_dir         = var.source_dir
+  lambda_zip         = var.lambda_zip
+  lambda_memory      = var.lambda_memory
+  lambda_timeout     = var.lambda_timeout
 }
 
-# dynamodb models
-module "db" {
-  source = "./deploy/db"
-  region = "${var.region}"
-  aws_account_id = "${var.aws_account_id}"
-  domain_name = "${var.domain_name}"
-  role = "${module.api.role}"
+module "cloudflare" {
+  source          = "./framework/terraform/cloudflare"
+  project_name    = var.project_name
+  cloudflare_zone = var.cloudflare_zone
+  name            = var.env_name
+  domain_name     = var.domain_name
+  dns_names       = var.dns_names
+  www_redirects   = var.www_redirects
+  api_redirects = concat(var.api_redirects, [{
+    from = "${var.api_domain != "" ? var.api_domain : var.domain_name}/${module.api.path}"
+    to   = module.api.endpoint
+  }])
+  allowed_ips = var.allowed_ips
 }
 
-# public s3 bucket with cloudflare naming
-module "static" {
-  source = "./deploy/static"
-  static_domain_name = "${var.static_domain_name}"
-  cloudflare_zone = "${var.cloudflare_zone}"
-}
-
-# s3 backed single page site
 module "public" {
-  source = "./deploy/public"
-  domain_name = "${var.domain_name}"
-  cloudflare_zone = "${var.cloudflare_zone}"
+  source      = "./framework/terraform/public"
+  aws_profile = var.aws_profile
+  domain_name = var.domain_name
+  buckets     = var.buckets
+}
+
+module "db" {
+  source       = "./framework/terraform/db"
+  project_name = var.project_name
+  name         = var.env_name
+  role         = module.api.role
+  tables       = var.tables
 }
